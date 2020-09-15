@@ -1,0 +1,208 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta property="og:title" content="">
+  <meta property="og:type" content="">
+  <meta property="og:url" content="">
+  <meta property="og:image" content="">
+
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="apple-touch-icon" href="icon.png">
+  <!-- Place favicon.ico in the root directory -->
+
+  <link rel="stylesheet" href="css/normalize.css">
+  <link rel="stylesheet" href="css/main.css">
+
+  <style type="text/css">
+  @font-face {
+    font-family: 'Lato';
+    src: url('fonts/Lato-Regular.woff2') format('woff2');
+         url('fonts/Lato-Regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  .profileImg, #user_selection img {
+    width: 44px;
+    height: 44px;
+  }
+
+  #user_selection a {
+    cursor: pointer;
+    display: inline-block;
+    height: 100%;
+  }
+
+  #user_selection .currentlySelected {
+    background-color:#ccc;
+  }
+
+  #user_selection ul {
+    list-style-type: none;
+    padding-left: 0px;
+  }
+
+  #user_selection img, #user_selection span {
+  }
+
+  #user_selection li {
+    height: 44px;
+  }
+
+  #mainInput {
+    clear: left;
+  }
+
+  #chatContentTable {
+    font-family: "Lato";
+  }
+
+  .message_time {
+    margin-left: 5px;
+    color: #777;
+    font-size: 11px;
+  }
+  </style>
+
+  <meta name="theme-color" content="#fafafa">
+
+  <script type="text/JavaScript">
+  var currently_selected_user = -1;
+  var all_users = {};
+  var previous_chat_user = -1;
+
+  function getCurrentlySelectedUserFunc(userNum, li_elem) {
+    return function getCurrentlySelectedUser() {
+      currently_selected_user = userNum;
+      var userSelection = document.getElementById("user_selection");
+
+      var previouslySelected = userSelection.querySelectorAll(".currentlySelected");
+      for (i = 0; i < previouslySelected.length; i++) {
+        previouslySelected[i].classList.remove("currentlySelected");
+      }
+
+      var all_li = userSelection.querySelectorAll("li");
+      all_li[userNum].classList.add("currentlySelected");
+    }
+  }
+
+  function addMessageToChat() {
+    var table = document.getElementById("chatContentTable");
+    var row = table.insertRow(-1);
+    var cell1 = row.insertCell(0);
+    var cell2 = row.insertCell(1);
+    var username = all_users[currently_selected_user]["name"];
+    var message = document.getElementById("messageField").value;
+    var time = document.getElementById("timeField").value;
+    var profilePicName = all_users[currently_selected_user]["profile_picture"];
+    var isFirstMessage = currently_selected_user !== previous_chat_user;
+    if (isFirstMessage === true) {
+        cell1.innerHTML = "<img src=\"profile_pics/" + profilePicName + "\" class=\"profileImg\" />";
+        var innerTable = document.createElement("table")
+        var innerRow1 = innerTable.insertRow(0);
+        var innerRow2 = innerTable.insertRow(1);
+        var innerCell1 = innerRow1.insertCell(0);
+        var innerCell2 = innerRow2.insertCell(0);
+
+        innerCell1.innerHTML = "<strong>" + username + "</strong> " + "<span class=\"message_time\">" + time + "</span>";
+        innerCell2.innerHTML = message;
+
+        cell2.appendChild(innerTable);
+    } else {
+        var innerTable = document.createElement("table")
+        var innerRow1 = innerTable.insertRow(0);
+        var innerCell1 = innerRow1.insertCell(0);
+        innerCell1.innerHTML = message;
+        cell2.appendChild(innerTable);
+
+    }
+    previous_chat_user = currently_selected_user;
+  }
+  function fillUserSelectionsSection(users_obj) {
+    var users = users_obj["users"];
+    var ul_elem = document.createElement("ul");
+    var user_selection_div = document.getElementById("user_selection");
+    user_selection_div.appendChild(ul_elem);
+    for (i = 0; i < users.length; i++) {
+        var li_elem = document.createElement("li");
+        var a_elem = document.createElement("a");
+        a_elem.addEventListener("click", getCurrentlySelectedUserFunc(i, li_elem))
+        var img_elem = document.createElement("img");
+        img_elem.src = "profile_pics/" + users[i].profile_picture;
+        var span_elem = document.createElement("span");
+        span_elem.innerHTML = users[i].name;
+        a_elem.appendChild(img_elem);
+        a_elem.appendChild(span_elem);
+        li_elem.appendChild(a_elem);
+        ul_elem.appendChild(li_elem);
+    }
+    all_users = users;
+  }
+  function loadFile() {
+    var input, file, fr;
+
+    if (typeof window.FileReader !== 'function') {
+      alert("The file API isn't supported on this browser yet.");
+      return;
+    }
+
+    input = document.getElementById('fileinput');
+    if (!input) {
+      alert("Um, couldn't find the fileinput element.");
+    }
+    else if (!input.files) {
+      alert("This browser doesn't seem to support the `files` property of file inputs.");
+    }
+    else if (!input.files[0]) {
+      alert("Please select a file before clicking 'Load'");
+    }
+    else {
+      file = input.files[0];
+      fr = new FileReader();
+      fr.onload = receivedText;
+      fr.readAsText(file);
+    }
+
+    function receivedText(e) {
+      let lines = e.target.result;
+      var newArr = JSON.parse(lines);
+      fillUserSelectionsSection(newArr);
+      console.log(newArr);
+    }
+  }
+
+  </script>
+</head>
+
+<body>
+<form id="jsonFile" name="jsonFile" enctype="multipart/form-data" method="post">
+
+  <fieldset>
+    <h2>Json File</h2>
+     <input type='file' id='fileinput'>
+     <input type='button' id='btnLoad' value='Load' onclick='loadFile();'>
+  </fieldset>
+</form>
+<div id="user_selection">
+</div>
+<table id="mainInput">
+<tr><td>Message:</td><td><textarea id="messageField"></textarea></td></tr>
+<tr><td>Time:</td><td><input type="text" id="timeField" /></td></tr>
+<tr><td><input type="submit" onClick="addMessageToChat()" /></td></tr>
+</table>
+
+<table id="chatContentTable">
+</table>
+
+
+
+</body>
+
+</html>
